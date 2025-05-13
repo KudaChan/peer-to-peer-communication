@@ -27,12 +27,17 @@
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
-    <li><a href="#installation">Installation</a></li>
+    <li>
+      <a href="#installation">Installation</a>
+      <ul>
+        <li><a href="#docker-installation">Docker Installation</a></li>
+        <li><a href="#manual-installation">Manual Installation</a></li>
+      </ul>
+    </li>
     <li><a href="#demonstration">Demonstration</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
-
   </ol>
 </details>
 
@@ -95,6 +100,51 @@ This project serves as an exploration of WebRTC technology, pushing the boundari
 
 ## Installation
 
+### Docker Installation
+
+The easiest way to run the application is using Docker. This method requires Docker and Docker Compose to be installed on your system.
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/KishorBalgi/Peer-to-Peer-Video-Communication.git
+   cd Peer-to-Peer-Video-Communication
+   ```
+
+2. Create a `.env` file in the root directory with the following variables:
+   ```
+   # Database
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=yourpassword
+   POSTGRES_DB=p2p_video
+   DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+   
+   # JWT
+   JWT_SECRET=your_32_character_secret_key
+   ```
+
+3. Build and start the containers:
+   ```bash
+   docker-compose up --build
+   ```
+
+4. Access the application:
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8080
+
+5. To stop the application:
+   ```bash
+   docker-compose down
+   ```
+
+6. To remove all data (including database volumes):
+   ```bash
+   docker-compose down -v
+   ```
+
+### Manual Installation
+
+If you prefer to run the application without Docker, follow these steps:
+
 1. - Fork the [repo](https://github.com/KishorBalgi/Peer-to-Peer-Video-Communication)
    - Clone the repo to your local system
 
@@ -111,8 +161,8 @@ This project serves as an exploration of WebRTC technology, pushing the boundari
    npm install # This will install all the required dependencies for the front-end
    ```
 
-   - Front End Enivronment Configurations:
-     create a .env file in the root directory and add the following env variables
+   - Front End Environment Configurations:
+     create a .env file in the client directory and add the following env variables
 
    ```text
     NEXT_PUBLIC_API_URL = "Server URL"
@@ -130,12 +180,12 @@ This project serves as an exploration of WebRTC technology, pushing the boundari
      Install all the dependencies
 
    ```bash
-   cd backend/
+   cd server/
    npm install # This will install all the required dependencies for the back-end
    ```
 
-   - Backend End Enivronment Configurations:
-     create a .env file in the backend directory and add the following env variables
+   - Backend Environment Configurations:
+     create a .env file in the server directory and add the following env variables
 
    ```text
     PORT=8080
@@ -151,7 +201,7 @@ This project serves as an exploration of WebRTC technology, pushing the boundari
    npm start # Without nodemon
    ```
 
-    <!-- Demonstration -->
+<!-- Demonstration -->
 
 ## Demonstration
 
