@@ -68,27 +68,23 @@ export const toggleVideoAudio = async (
 ) => {
   const peer = getPeer(streamData.peerId);
   const stream = peer?.stream;
-  const peerConnection = peer?.connection;
 
-  if (!stream) return console.log("Stream not found");
+  if (!stream) {
+    console.log("Stream not found");
+    return;
+  }
 
   // For video:
   if (toggle === "video") {
     try {
-      // console.log(stream.getVideoTracks());
       const videoTrack = stream.getVideoTracks()[0];
+      if (!videoTrack) {
+        console.log("No video track found");
+        return;
+      }
       videoTrack.enabled = !videoTrack.enabled;
-      // if (videoTrack) {
-      //   videoTrack.enabled = !videoTrack.enabled;
-      //   videoTrack.stop();
-      //   return stream.removeTrack(videoTrack);
-      // }
-      // const newVideoTrack = await navigator.mediaDevices.getUserMedia({
-      //   video: true,
-      // });
-      // stream.addTrack(newVideoTrack.getVideoTracks()[0]);
     } catch (err) {
-      console.log(err); //🚩 video track error
+      console.log("Video track error:", err);
     }
   }
 
@@ -96,18 +92,13 @@ export const toggleVideoAudio = async (
   if (toggle === "audio") {
     try {
       const audioTrack = stream.getAudioTracks()[0];
+      if (!audioTrack) {
+        console.log("No audio track found");
+        return;
+      }
       audioTrack.enabled = !audioTrack.enabled;
-      // if (audioTrack) {
-      //   audioTrack.enabled = !audioTrack.enabled;
-      //   audioTrack.stop();
-      //   return stream.removeTrack(audioTrack);
-      // }
-      // const newAudioTrack = await navigator.mediaDevices.getUserMedia({
-      //   audio: true,
-      // });
-      // stream.addTrack(newAudioTrack.getAudioTracks()[0]);
     } catch (err) {
-      console.log(err); //🚩 audio track error
+      console.log("Audio track error:", err);
     }
   }
 };
