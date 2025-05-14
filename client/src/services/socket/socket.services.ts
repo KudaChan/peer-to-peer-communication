@@ -13,9 +13,12 @@ export const socket: ISocketInstance = io(
       token: store.getState().user.token,
     },
     withCredentials: true,
-    transports: ['websocket', 'polling'], // Try both transport methods
+    transports: ['polling', 'websocket'],
     reconnectionAttempts: 5,
-    reconnectionDelay: 1000
+    reconnectionDelay: 1000,
+    timeout: 20000,
+    forceNew: true,
+    path: '/socket.io'
   }
 );
 
@@ -25,6 +28,8 @@ socket.on("connect", () => {
 
 socket.on("connect_error", (error) => {
   console.error("Socket connection error:", error);
+  console.error("Socket connection error message:", error.message);
+  console.error("Socket URL:", process.env.NEXT_PUBLIC_SOCKET_URL);
 });
 
 socket.on("disconnect", () => {

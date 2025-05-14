@@ -53,22 +53,17 @@ app.use(hpp());
 app.use(compression());
 
 // CORS setup:
-const allowedOrigin =
-  process.env.NODE_ENV === "production"
-    ? environment.client_prod
-    : environment.client_dev;
-
-// Update CORS configuration to be more permissive during development
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "development" 
-      ? [allowedOrigin, "http://localhost:3000", "http://127.0.0.1:3000"].flat() 
-      : allowedOrigin,
+    origin: ["http://34.131.4.164:3000", "http://34.131.4.164:8080", "http://localhost:3000", "http://localhost:8080"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Cookie"]
   })
 );
+
+// Add preflight OPTIONS handler
+app.options('*', cors());
 
 // Routes:
 app.use("/api/v1/auth", authRoutes);
@@ -87,12 +82,13 @@ export const httpServer = createServer(app);
 
 const io = new Server<ServerToClientEvents, ClientToServerEvents>(httpServer, {
   cors: {
-    origin: process.env.NODE_ENV === "development" 
-      ? [allowedOrigin, "http://localhost:3000", "http://127.0.0.1:3000"].flat() 
-      : allowedOrigin,
+    origin: ["http://34.131.4.164:3000", "http://34.131.4.164:8080", "http://localhost:3000", "http://localhost:8080"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
   },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true
 });
 
 // Socket Auth:
