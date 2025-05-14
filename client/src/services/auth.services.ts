@@ -15,19 +15,35 @@ export const signup = async (
   };
   try {
     const res = await api.post("/auth/signup", body);
+    console.log("Signup response:", res.data);
 
     if (res.data.status === "success") {
       const { data } = res.data;
+      
+      // Get token from response data or data.jwttoken
+      const token = data.token || data.jwttoken;
+      
+      if (!token) {
+        console.error("No token found in response");
+        return { status: "error", message: "Authentication failed - no token" };
+      }
+      
+      console.log("Token received:", token.substring(0, 10) + "...");
+      
       const user = {
         id: data.id,
         name: data.name,
         email: data.email,
         createdAt: data.createdAt,
-        token: res.data.jwttoken,
+        token: token,
       };
 
       // Set user in redux store:
       store.dispatch(addUser(user));
+      
+      // Also store token in localStorage as backup
+      localStorage.setItem('authToken', token);
+      
       return {
         status: res.data.status,
         message: "Signed up successfully",
@@ -36,9 +52,10 @@ export const signup = async (
     }
     return { status: res.data.status, message: "Something went wrong" };
   } catch (err: any) {
+    console.error("Signup error:", err);
     return {
-      status: err.response?.data.status,
-      message: err.response?.data.message,
+      status: err.response?.data.status || "error",
+      message: err.response?.data.message || "Signup failed",
     };
   }
 };
@@ -55,16 +72,37 @@ export const login = async (data: FormData): Promise<IFormCallbackResponse> => {
     
     if (res.data.status === "success") {
       const { data } = res.data;
+      
+      // Get token from response data or data.jwttoken
+      const token = data.token || data.jwttoken;
+      
+      if (!token) {
+        console.error("No token found in response");
+        return { status: "error", message: "Authentication failed - no token" };
+      }
+      
+      console.log("Token received:", token.substring(0, 10) + "...");
+      
       const user = {
         id: data.id,
         name: data.name,
         email: data.email,
         createdAt: data.createdAt,
-        token: res.data.data.jwttoken,
+        token: token,
       };
 
       // Set user in redux store:
       store.dispatch(addUser(user));
+      
+      // Also store token in localStorage as backup
+      localStorage.setItem('authToken', token);
+      
+      // Update socket authentication
+      if (typeof window !== 'undefined') {
+        const { updateSocketAuth } = require('./socket/socket.services');
+        updateSocketAuth();
+      }
+      
       return { status: res.data.status, message: "Logged In", redirect: "/" };
     }
     return { status: res.data.status, message: "Something went wrong" };

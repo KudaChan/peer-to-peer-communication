@@ -13,12 +13,33 @@ const api = axios.create({
   }
 });
 
-// Add request interceptor to include token in Authorization header as backup
+// Add request interceptor to include token in Authorization header
 api.interceptors.request.use(
   config => {
-    const token = store.getState().user.token;
+    // Try to get token from multiple sources
+    let token: string | null | undefined = store.getState().user.token;
+    
+    // If no token in Redux, try localStorage
+    if (!token && typeof window !== 'undefined') {
+      token = localStorage.getItem('authToken');
+    }
+    
+    // If no token in localStorage, try cookies
+    if (!token && typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      token = cookies['jwt-client'];
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("Adding token to request:", token.substring(0, 10) + "...");
+    } else {
+      console.log("No token available for request");
     }
     return config;
   },

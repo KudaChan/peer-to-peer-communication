@@ -1,20 +1,18 @@
 import { Response } from "express";
 
-// Util used to send response:
-export const sendResponse = (res: Response, statusCode: number, data: any) => {
-  // Set status:
-  let status = "success";
-  if (statusCode >= 400) {
-    status = "error";
-  } else if (statusCode >= 500) {
-    status = "fail";
-  }
-
-  //   Filter out unwanted fields:
-  if (data.password) delete data.password;
-
+export const sendResponse = (
+  res: Response,
+  statusCode: number,
+  data: any,
+  message?: string
+) => {
+  // If data contains jwttoken, include it directly in the response
+  const token = data.jwttoken || null;
+  
   res.status(statusCode).json({
-    status: status,
+    status: statusCode >= 200 && statusCode < 300 ? "success" : "fail",
+    message: message || "",
     data,
+    ...(token && { token }) // Include token at the top level if it exists
   });
 };

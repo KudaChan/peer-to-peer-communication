@@ -6,32 +6,33 @@ import { signup, login, isAuthenticated } from "../services/auth.services";
 
 // Cookie Options for JWT:
 const addCookie = (res: Response, req: Request, token: string) => {
+  // Get domain from request origin or use default
+  const origin = req.headers.origin || '';
+  const domain = process.env.NODE_ENV === 'production' 
+    ? origin.includes('34.131.4.164') ? '34.131.4.164' : undefined
+    : undefined;
+  
+  console.log(`Setting cookie for domain: ${domain || 'default'}, origin: ${origin}`);
+  
   const cookieOps: CookieOptions = {
-    expires: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+    expires: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
-    path: '/'
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
+    domain: domain
   };
   
+  console.log("Setting cookie with options:", JSON.stringify(cookieOps));
   res.cookie("jwt", token, cookieOps);
+  
+  // Also set a non-httpOnly cookie for client-side access
+  const clientCookieOps: CookieOptions = {
+    ...cookieOps,
+    httpOnly: false
+  };
+  res.cookie("jwt-client", token, clientCookieOps);
 };
-
-// Sign up:
-export const signupController = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      throw next(new AppError(400, "Please provide all fields"));
-    }
-
-    const user = await signup({ name, email, password });
-
-    addCookie(res, req, user.jwttoken);
-    sendResponse(res, 201, user);
-  }
-);
 
 // login:
 export const loginController = catchAsync(
@@ -45,7 +46,33 @@ export const loginController = catchAsync(
     const user = await login({ email, password });
 
     addCookie(res, req, user.jwttoken);
-    sendResponse(res, 200, user);
+    
+    // Return the token in the response body as well
+    sendResponse(res, 200, {
+      ...user,
+      token: user.jwttoken // Explicitly include token in response
+    });
+  }
+);
+
+// Sign up:
+export const signupController = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      throw next(new AppError(400, "Please provide all fields"));
+    }
+
+    const user = await signup({ name, email, password });
+
+    addCookie(res, req, user.jwttoken);
+    
+    // Return the token in the response body as well
+    sendResponse(res, 201, {
+      ...user,
+      token: user.jwttoken // Explicitly include token in response
+    });
   }
 );
 

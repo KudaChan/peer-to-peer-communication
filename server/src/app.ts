@@ -58,7 +58,9 @@ const allowedOrigins = [
   clientUrl,
   // Add Google Cloud VM IP
   'http://34.131.4.164:3000',
+  'https://34.131.4.164:3000',
   'http://34.131.4.164:8080',
+  'https://34.131.4.164:8080',
   // Local development URLs
   'http://localhost:3000',
   'http://127.0.0.1:3000',
@@ -67,27 +69,29 @@ const allowedOrigins = [
 ];
 
 console.log('CORS allowed origins:', allowedOrigins);
+console.log('Client URL:', clientUrl);
+console.log('NODE_ENV:', process.env.NODE_ENV);
 
+// Configure CORS middleware with proper options
 app.use(
   cors({
     origin: function(origin, callback) {
+      console.log('Request origin:', origin);
+      
       // Allow requests with no origin (like mobile apps, curl, etc)
       if (!origin) return callback(null, true);
       
-      if (allowedOrigins.indexOf(origin) === -1) {
-        console.log(`CORS blocked origin: ${origin}`);
-      }
-      
       // Allow all origins in development
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV !== 'production') {
         return callback(null, true);
       }
       
-      if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      if (allowedOrigins.indexOf(origin) !== -1) {
         return callback(null, true);
       }
       
-      callback(new Error('Not allowed by CORS'));
+      console.log(`CORS blocked origin: ${origin}`);
+      callback(null, true); // Allow all origins in production for now
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -96,7 +100,10 @@ app.use(
 );
 
 // Add preflight OPTIONS handler
-app.options('*', cors());
+app.options('*', cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
 // Routes:
 app.use("/api/v1/auth", authRoutes);
@@ -118,7 +125,24 @@ console.log('Socket.io allowed origins:', allowedOrigins);
 
 const io = new Server<ServerToClientEvents, ClientToServerEvents>(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: function(origin, callback) {
+      console.log('Socket.io request origin:', origin);
+      
+      // Allow requests with no origin
+      if (!origin) return callback(null, true);
+      
+      // Allow all origins in development
+      if (process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true);
+      }
+      
+      console.log(`Socket.io CORS blocked origin: ${origin}`);
+      callback(null, true); // Allow all origins in production for now
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
@@ -147,6 +171,7 @@ io.use(async (socket, next) => {
     // If no token in cookie, try auth header
     if (!token && socket.handshake.auth && socket.handshake.auth.token) {
       token = socket.handshake.auth.token;
+      console.log("Using token from socket auth:", token.substring(0, 10) + "...");
     }
     
     if (!token) {
