@@ -56,9 +56,14 @@ app.use(compression());
 const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 const allowedOrigins = [
   clientUrl,
-  // Add any additional origins if needed
+  // Add Google Cloud VM IP
+  'http://34.131.4.164:3000',
+  'http://34.131.4.164:8080',
+  // Local development URLs
   'http://localhost:3000',
-  'http://localhost:8080'
+  'http://127.0.0.1:3000',
+  'http://localhost:8080',
+  'http://127.0.0.1:8080'
 ];
 
 console.log('CORS allowed origins:', allowedOrigins);
