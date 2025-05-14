@@ -6,11 +6,16 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copy environment variables
-COPY .env.local ./
-
 # Copy the rest of the application
 COPY . .
+
+# Set build arguments
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SOCKET_URL
+
+# Create .env.local file with build arguments
+RUN echo "NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}" > .env.local && \
+    echo "NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}" >> .env.local
 
 # Build the application
 RUN npm run build

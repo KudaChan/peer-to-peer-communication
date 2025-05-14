@@ -68,22 +68,27 @@ export const login = async (data: ILogin) => {
 
 // Is Authenticated:
 export const isAuthenticated = async (token: string) => {
-  const { id } = verifyJWT(token) as JwtPayload;
-  const user = await prisma.user.findUnique({
-    where: {
-      id,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      createdAt: true,
-    },
-  });
+  try {
+    const { id } = verifyJWT(token) as JwtPayload;
+    const user = await prisma.user.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+      },
+    });
 
-  if (!user) {
-    throw new AppError(400, "User does not exist");
+    if (!user) {
+      throw new AppError(400, "User does not exist");
+    }
+
+    return { ...user, jwttoken: signJWT({ id: user.id }) };
+  } catch (error) {
+    console.error("Authentication error:", error);
+    throw new AppError(401, "Authentication failed. Please login again.");
   }
-
-  return { ...user, jwttoken: signJWT({ id: user.id }) };
 };

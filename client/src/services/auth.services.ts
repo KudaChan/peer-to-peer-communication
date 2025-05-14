@@ -51,6 +51,8 @@ export const login = async (data: FormData): Promise<IFormCallbackResponse> => {
   };
   try {
     const res = await api.post("/auth/login", body);
+    console.log("Login response:", res.data);
+    
     if (res.data.status === "success") {
       const { data } = res.data;
       const user = {
@@ -58,7 +60,7 @@ export const login = async (data: FormData): Promise<IFormCallbackResponse> => {
         name: data.name,
         email: data.email,
         createdAt: data.createdAt,
-        token: res.data.jwttoken,
+        token: res.data.data.jwttoken,
       };
 
       // Set user in redux store:
@@ -67,10 +69,10 @@ export const login = async (data: FormData): Promise<IFormCallbackResponse> => {
     }
     return { status: res.data.status, message: "Something went wrong" };
   } catch (err: any) {
-    console.log(err);
+    console.error("Login error:", err);
     return {
       status: "error",
-      message: err.response?.data.message,
+      message: err.response?.data.message || "Login failed",
     };
   }
 };
@@ -78,7 +80,10 @@ export const login = async (data: FormData): Promise<IFormCallbackResponse> => {
 // Is Authenticated:
 export const isAuthenticated = async (): Promise<IFormCallbackResponse> => {
   try {
+    console.log("Checking authentication...");
     const res = await api.get("/auth/is-authenticated");
+    console.log("Authentication response:", res.data);
+    
     if (res.data.status === "success") {
       const { data } = res.data;
       const user = {
@@ -86,17 +91,19 @@ export const isAuthenticated = async (): Promise<IFormCallbackResponse> => {
         name: data.name,
         email: data.email,
         createdAt: data.createdAt,
-        token: res.data.jwttoken,
+        token: res.data.data.jwttoken,
       };
 
       // Set user in redux store:
       store.dispatch(addUser(user));
+      return { status: res.data.status, message: "Authenticated" };
     }
-    return { status: res.data.status, message: "Authenticated" };
+    return { status: res.data.status, message: "Not authenticated" };
   } catch (err: any) {
+    console.error("Authentication error:", err);
     return {
-      status: err.response?.data.status,
-      message: err.response?.data.message,
+      status: err.response?.data.status || "error",
+      message: err.response?.data.message || "Authentication failed",
     };
   }
 };

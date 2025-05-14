@@ -1,4 +1,5 @@
 import axios from "axios";
+import { store } from "@/redux/store";
 
 // Log the API URL to debug
 console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
@@ -12,13 +13,29 @@ const api = axios.create({
   }
 });
 
-// Add request interceptor to handle CORS preflight
+// Add request interceptor to include token in Authorization header as backup
 api.interceptors.request.use(
   config => {
-    // You can add any custom headers here if needed
+    const token = store.getState().user.token;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   error => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle auth errors
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      console.log("Authentication error, redirecting to login");
+      // Optionally redirect to login page
+      // window.location.href = '/auth/login';
+    }
     return Promise.reject(error);
   }
 );

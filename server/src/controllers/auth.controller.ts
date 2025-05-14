@@ -8,10 +8,12 @@ import { signup, login, isAuthenticated } from "../services/auth.services";
 const addCookie = (res: Response, req: Request, token: string) => {
   const cookieOps: CookieOptions = {
     expires: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-    httpOnly: process.env.NODE_ENV === "production",
-    secure: req.secure || req.headers["x-forwarded-proto"] === "https",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
+    path: '/'
   };
-  if (process.env.NODE_ENV === "production") cookieOps.sameSite = "none";
+  
   res.cookie("jwt", token, cookieOps);
 };
 
@@ -50,15 +52,33 @@ export const loginController = catchAsync(
 // Is Authenticated:
 export const isAuthenticatedController = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    // Check for JWT in cookies
     const jwt = req.cookies?.jwt;
-
-    if (!jwt) {
-      throw next(new AppError(401, "Please login to continue"));
+    
+    // If no JWT in cookies, check Authorization header
+    const authHeader = req.headers.authorization;
+    const headerToken = authHeader && authHeader.startsWith('Bearer ') 
+      ? authHeader.split(' ')[1] 
+      : null;
+    
+    const token = jwt || headerToken;
+    
+    if (!token) {
+      console.log("No authentication token found");
+      return next(new AppError(401, "Please login to continue"));
     }
 
-    const user = await isAuthenticated(jwt);
-
-    sendResponse(res, 200, user);
+    try {
+      const user = await isAuthenticated(token);
+      
+      // Refresh the cookie with a new token
+      addCookie(res, req, user.jwttoken);
+      
+      sendResponse(res, 200, user);
+    } catch (error) {
+      console.error("Authentication error:", error);
+      return next(new AppError(401, "Authentication failed. Please login again."));
+    }
   }
 );
 

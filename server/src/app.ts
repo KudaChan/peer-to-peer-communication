@@ -52,10 +52,38 @@ app.use(hpp());
 
 app.use(compression());
 
-// CORS setup:
+// CORS setup with environment-based configuration
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+const allowedOrigins = [
+  clientUrl,
+  // Add any additional origins if needed
+  'http://localhost:3000',
+  'http://localhost:8080'
+];
+
+console.log('CORS allowed origins:', allowedOrigins);
+
 app.use(
   cors({
-    origin: ["http://34.131.4.164:3000", "http://34.131.4.164:8080", "http://localhost:3000", "http://localhost:8080"],
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, etc)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) === -1) {
+        console.log(`CORS blocked origin: ${origin}`);
+      }
+      
+      // Allow all origins in development
+      if (process.env.NODE_ENV === 'development') {
+        return callback(null, true);
+      }
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+        return callback(null, true);
+      }
+      
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Cookie"]
@@ -80,9 +108,12 @@ app.all("*", (req, res, next) => {
 // Socket setup:
 export const httpServer = createServer(app);
 
+// Use the same clientUrl and allowedOrigins variables defined above
+console.log('Socket.io allowed origins:', allowedOrigins);
+
 const io = new Server<ServerToClientEvents, ClientToServerEvents>(httpServer, {
   cors: {
-    origin: ["http://34.131.4.164:3000", "http://34.131.4.164:8080", "http://localhost:3000", "http://localhost:8080"],
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
@@ -94,27 +125,49 @@ const io = new Server<ServerToClientEvents, ClientToServerEvents>(httpServer, {
 // Socket Auth:
 io.use(async (socket, next) => {
   try {
-    const token = socket.handshake.headers.cookie?.split("=")[1];
+    // Try to get token from cookie
+    const cookieHeader = socket.handshake.headers.cookie;
+    let token = null;
+    
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      token = cookies.jwt;
+    }
+    
+    // If no token in cookie, try auth header
+    if (!token && socket.handshake.auth && socket.handshake.auth.token) {
+      token = socket.handshake.auth.token;
+    }
+    
     if (!token) {
-      return new Error("Authentication error");
+      console.log("No authentication token found in socket connection");
+      return next(new Error("Authentication error"));
     }
 
     // Verify token:
     const { id } = verifyJWT(token as string) as JwtPayload;
     if (!id) {
-      return new Error("Authentication error");
+      console.log("Invalid token in socket connection");
+      return next(new Error("Authentication error"));
     }
 
     // Get user from db:
     const user = await getUser(id);
     if (!user) {
-      return new Error("Authentication error");
+      console.log("User not found in socket connection");
+      return next(new Error("Authentication error"));
     }
 
     // Add user to socket:
     socket.data.user = user;
     next();
   } catch (err: any) {
+    console.error("Socket authentication error:", err);
     return next(new AppError(401, err.message));
   }
 });
@@ -127,3 +180,5 @@ initiateSocket(io);
 
 // Error handling middleware:
 app.use(globalErrorHandler);
+
+export default app;
