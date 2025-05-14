@@ -26,8 +26,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (user.id !== "") socket.connect();
-    else socket.disconnect();
+    if (user.id !== "") {
+      const { initializeSocket } = require('@/services/socket/socket.services');
+      initializeSocket();
+    } else {
+      socket.disconnect();
+    }
   }, [user]);
 
   return (

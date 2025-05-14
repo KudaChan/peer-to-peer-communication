@@ -34,12 +34,22 @@ socket.on("connect_error", (error) => {
   console.error("Socket connection error:", error);
 });
 
-// Reconnect with updated token when user logs in
+// Update socket auth function to handle token properly
 export const updateSocketAuth = () => {
   const token = store.getState().user.token;
   if (token && socket) {
-    console.log("Updating socket auth token");
+    console.log("Updating socket auth token:", token.substring(0, 10) + "...");
     socket.auth = { token };
     socket.disconnect().connect();
+  }
+};
+
+// Add a function to initialize socket with current token
+export const initializeSocket = () => {
+  const token = store.getState().user.token;
+  if (token) {
+    console.log("Initializing socket with token:", token.substring(0, 10) + "...");
+    socket.auth = { token };
+    socket.connect();
   }
 };
