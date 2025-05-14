@@ -58,10 +58,15 @@ const allowedOrigin =
     ? environment.client_prod
     : environment.client_dev;
 
+// Update CORS configuration to be more permissive during development
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: process.env.NODE_ENV === "development" 
+      ? [allowedOrigin, "http://localhost:3000", "http://127.0.0.1:3000"].flat() 
+      : allowedOrigin,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
   })
 );
 
@@ -82,8 +87,11 @@ export const httpServer = createServer(app);
 
 const io = new Server<ServerToClientEvents, ClientToServerEvents>(httpServer, {
   cors: {
-    origin: allowedOrigin,
+    origin: process.env.NODE_ENV === "development" 
+      ? [allowedOrigin, "http://localhost:3000", "http://127.0.0.1:3000"].flat() 
+      : allowedOrigin,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   },
 });
 

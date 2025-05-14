@@ -13,11 +13,18 @@ export const socket: ISocketInstance = io(
       token: store.getState().user.token,
     },
     withCredentials: true,
+    transports: ['websocket', 'polling'], // Try both transport methods
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000
   }
 );
 
 socket.on("connect", () => {
   console.log("Socket connected: ", socket.id);
+});
+
+socket.on("connect_error", (error) => {
+  console.error("Socket connection error:", error);
 });
 
 socket.on("disconnect", () => {

@@ -1,7 +1,9 @@
 {
   "client_dev": [
     "http://localhost:3000",
-    "https://p-to-p-video-client.onrender.com"
+    "http://127.0.0.1:3000"
   ],
-  "client_prod": ["https://p-to-p-video-client.onrender.com"]
+  "client_prod": [
+    "http://34.131.4.164:3000"
+  ]
 }
